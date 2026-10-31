@@ -1,0 +1,519 @@
+﻿
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  color: #1e293b;
+  background: #f8fafc;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+::selection {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+/* =========================================
+   SMARTLEAVE GLOBAL FONT AND THEME SYSTEM
+========================================= */
+
+:root {
+    color-scheme: light;
+    --theme-bg: #f8fafc;
+    --theme-card: #ffffff;
+    --theme-text: #172033;
+    --theme-muted: #475569;
+    --theme-border: #dbe2ea;
+    --theme-input: #ffffff;
+}
+
+html {
+    font-size: 16px;
+}
+
+body {
+    font-size: 16px;
+    line-height: 1.6;
+    background: var(--theme-bg);
+    color: var(--theme-text);
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+/* More readable small text */
+.text-xs {
+    font-size: 0.875rem !important;
+}
+
+.text-sm {
+    font-size: 0.9375rem !important;
+}
+
+.text-base {
+    font-size: 1rem !important;
+}
+
+/* Readable controls */
+button, input, select, textarea {
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+input, select, textarea {
+    min-height: 42px;
+}
+
+/* Dark theme */
+html.dark {
+    color-scheme: dark;
+    --theme-bg: #0f172a;
+    --theme-card: #1e293b;
+    --theme-text: #f1f5f9;
+    --theme-muted: #cbd5e1;
+    --theme-border: #475569;
+    --theme-input: #273449;
+    background: var(--theme-bg);
+    color: var(--theme-text);
+}
+
+html.dark body {
+    background: var(--theme-bg) !important;
+    color: var(--theme-text) !important;
+}
+
+/* Common Tailwind backgrounds */
+html.dark .bg-white,
+html.dark .bg-gray-50,
+html.dark .bg-gray-100,
+html.dark .bg-slate-50,
+html.dark .bg-slate-100 {
+    background-color: var(--theme-card) !important;
+}
+
+html.dark .bg-gray-200,
+html.dark .bg-slate-200 {
+    background-color: #334155 !important;
+}
+
+/* Common text colors */
+html.dark .text-gray-900,
+html.dark .text-gray-800,
+html.dark .text-slate-900,
+html.dark .text-slate-800,
+html.dark .text-black {
+    color: #f1f5f9 !important;
+}
+
+html.dark .text-gray-700,
+html.dark .text-gray-600,
+html.dark .text-slate-700,
+html.dark .text-slate-600,
+html.dark .text-slate-500 {
+    color: #cbd5e1 !important;
+}
+
+html.dark .text-gray-500,
+html.dark .text-gray-400,
+html.dark .text-slate-400 {
+    color: #94a3b8 !important;
+}
+
+/* Borders */
+html.dark .border,
+html.dark .border-gray-100,
+html.dark .border-gray-200,
+html.dark .border-slate-100,
+html.dark .border-slate-200 {
+    border-color: var(--theme-border) !important;
+}
+
+/* Forms */
+html.dark input,
+html.dark select,
+html.dark textarea {
+    background-color: var(--theme-input);
+    color: var(--theme-text);
+    border-color: var(--theme-border);
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+    color: #94a3b8;
+}
+
+/* Tables */
+html.dark table {
+    color: var(--theme-text);
+}
+
+html.dark th {
+    background-color: #273449;
+    color: #f1f5f9;
+}
+
+html.dark td {
+    border-color: var(--theme-border);
+}
+
+/* Links */
+html.dark a {
+    color: #93c5fd;
+}
+
+/* Improve readability */
+p, label, th, td {
+    line-height: 1.6;
+}
+
+
+/* ===== SMARTLEAVE READABILITY IMPROVEMENTS ===== */
+
+html {
+    font-size: 17px !important;
+}
+
+body {
+    font-size: 17px !important;
+    line-height: 1.7 !important;
+}
+
+/* Increase small and normal text */
+.text-xs {
+    font-size: 15px !important;
+}
+
+.text-sm {
+    font-size: 16px !important;
+}
+
+.text-base {
+    font-size: 17px !important;
+}
+
+.text-lg {
+    font-size: 19px !important;
+}
+
+.text-xl {
+    font-size: 21px !important;
+}
+
+.text-2xl {
+    font-size: 25px !important;
+}
+
+.text-3xl {
+    font-size: 30px !important;
+}
+
+/* Readable labels and table content */
+label, th, td, p, li {
+    font-size: inherit;
+    line-height: 1.65;
+}
+
+button, input, select, textarea {
+    font-size: 16px !important;
+    min-height: 42px;
+}
+
+/* Dark mode: improve navigation and header contrast */
+html.dark header,
+html.dark nav {
+    color: #f8fafc !important;
+}
+
+html.dark header *,
+html.dark nav * {
+    color: #f1f5f9;
+}
+
+html.dark header a,
+html.dark nav a {
+    color: #e2e8f0 !important;
+}
+
+html.dark header button,
+html.dark nav button {
+    color: #f8fafc !important;
+}
+
+/* Keep colored status badges readable */
+html.dark .text-green-600,
+html.dark .text-green-700 {
+    color: #86efac !important;
+}
+
+html.dark .text-red-600,
+html.dark .text-red-700 {
+    color: #fca5a5 !important;
+}
+
+html.dark .text-blue-600,
+html.dark .text-blue-700 {
+    color: #93c5fd !important;
+}
+
+
+/* GLOBAL DARK MODE FIX FOR ALL PAGE HEADERS AND TOP BARS */
+html.dark header,
+html.dark header.bg-white,
+html.dark nav.bg-white {
+    background-color: #1e293b !important;
+    border-color: #475569 !important;
+    color: #f8fafc !important;
+}
+
+html.dark header *,
+html.dark nav * {
+    color: #e2e8f0;
+}
+
+html.dark .text-slate-900,
+html.dark .text-slate-800,
+html.dark .text-gray-900,
+html.dark .text-gray-800 {
+    color: #f8fafc !important;
+}
+
+html.dark .text-slate-700,
+html.dark .text-slate-600,
+html.dark .text-slate-500,
+html.dark .text-gray-700,
+html.dark .text-gray-600,
+html.dark .text-gray-500 {
+    color: #cbd5e1 !important;
+}
+
+html.dark .bg-white,
+html.dark .bg-slate-50,
+html.dark .bg-gray-50 {
+    background-color: #1e293b !important;
+}
+
+html.dark header input,
+html.dark nav input {
+    background-color: #273449 !important;
+    color: #f8fafc !important;
+    border-color: #475569 !important;
+}
+
+html.dark header input::placeholder,
+html.dark nav input::placeholder {
+    color: #94a3b8 !important;
+}
+
+
+/* GLOBAL WEBSITE TYPOGRAPHY UPDATE */
+
+/* Main page headings */
+h1 {
+    font-size: 2.4rem !important;
+    line-height: 1.25 !important;
+    font-weight: 750 !important;
+}
+
+h2 {
+    font-size: 2rem !important;
+    line-height: 1.3 !important;
+    font-weight: 700 !important;
+}
+
+h3 {
+    font-size: 1.55rem !important;
+    line-height: 1.4 !important;
+    font-weight: 650 !important;
+}
+
+h4 {
+    font-size: 1.3rem !important;
+    line-height: 1.4 !important;
+    font-weight: 600 !important;
+}
+
+/* Description and paragraph text */
+p {
+    font-size: 1.05rem;
+    line-height: 1.65;
+}
+
+/* Tailwind text-size utilities */
+.text-xs {
+    font-size: 0.95rem !important;
+    line-height: 1.5 !important;
+}
+
+.text-sm {
+    font-size: 1rem !important;
+    line-height: 1.55 !important;
+}
+
+.text-base {
+    font-size: 1.1rem !important;
+    line-height: 1.6 !important;
+}
+
+.text-lg {
+    font-size: 1.25rem !important;
+    line-height: 1.5 !important;
+}
+
+.text-xl {
+    font-size: 1.4rem !important;
+    line-height: 1.45 !important;
+}
+
+.text-2xl {
+    font-size: 1.8rem !important;
+    line-height: 1.35 !important;
+}
+
+.text-3xl {
+    font-size: 2.2rem !important;
+    line-height: 1.3 !important;
+}
+
+/* Form labels and table text */
+label,
+th,
+td {
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+/* Mobile heading adjustments */
+@media (max-width: 640px) {
+    h1 {
+        font-size: 1.9rem !important;
+    }
+
+    h2 {
+        font-size: 1.6rem !important;
+    }
+
+    h3 {
+        font-size: 1.35rem !important;
+    }
+
+    p {
+        font-size: 1rem;
+    }
+}
+
+
+/* SUBHEADINGS AND CONTENT READABILITY */
+
+/* Page subtitles and descriptions */
+p,
+.subtitle,
+.description {
+    font-size: 1.15rem !important;
+    line-height: 1.75 !important;
+}
+
+/* Section headings */
+h3,
+h4 {
+    font-size: 1.5rem !important;
+    line-height: 1.5 !important;
+}
+
+/* Card headings */
+.card h2,
+.card h3,
+[class*="rounded"] h3 {
+    font-size: 1.4rem !important;
+}
+
+/* Card descriptions and general content */
+.card p,
+[class*="rounded"] p {
+    font-size: 1.1rem !important;
+    line-height: 1.7 !important;
+}
+
+/* Labels and input text */
+label,
+input,
+select,
+textarea,
+option {
+    font-size: 1.05rem !important;
+}
+
+/* Buttons */
+button {
+    font-size: 1.05rem;
+}
+
+/* Table content */
+th {
+    font-size: 1.05rem !important;
+    font-weight: 700 !important;
+}
+
+td {
+    font-size: 1.05rem !important;
+    line-height: 1.6 !important;
+}
+
+/* Small supporting text */
+.text-xs,
+.text-sm {
+    font-size: 1rem !important;
+    line-height: 1.6 !important;
+}
+
+/* Mobile readability */
+@media (max-width: 640px) {
+    p,
+    .subtitle,
+    .description {
+        font-size: 1.05rem !important;
+    }
+
+    td,
+    th {
+        font-size: 0.95rem !important;
+    }
+}
+
+

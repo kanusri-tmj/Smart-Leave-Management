@@ -1,0 +1,293 @@
+
+@import "tailwindcss";
+
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  color: #1e293b;
+  background: #f8fafc;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+::selection {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+/* =========================================
+   SMARTLEAVE GLOBAL FONT AND THEME SYSTEM
+========================================= */
+
+:root {
+    color-scheme: light;
+    --theme-bg: #f8fafc;
+    --theme-card: #ffffff;
+    --theme-text: #172033;
+    --theme-muted: #475569;
+    --theme-border: #dbe2ea;
+    --theme-input: #ffffff;
+}
+
+html {
+    font-size: 16px;
+}
+
+body {
+    font-size: 16px;
+    line-height: 1.6;
+    background: var(--theme-bg);
+    color: var(--theme-text);
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+/* More readable small text */
+.text-xs {
+    font-size: 0.875rem !important;
+}
+
+.text-sm {
+    font-size: 0.9375rem !important;
+}
+
+.text-base {
+    font-size: 1rem !important;
+}
+
+/* Readable controls */
+button, input, select, textarea {
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+input, select, textarea {
+    min-height: 42px;
+}
+
+/* Dark theme */
+html.dark {
+    color-scheme: dark;
+    --theme-bg: #0f172a;
+    --theme-card: #1e293b;
+    --theme-text: #f1f5f9;
+    --theme-muted: #cbd5e1;
+    --theme-border: #475569;
+    --theme-input: #273449;
+    background: var(--theme-bg);
+    color: var(--theme-text);
+}
+
+html.dark body {
+    background: var(--theme-bg) !important;
+    color: var(--theme-text) !important;
+}
+
+/* Common Tailwind backgrounds */
+html.dark .bg-white,
+html.dark .bg-gray-50,
+html.dark .bg-gray-100,
+html.dark .bg-slate-50,
+html.dark .bg-slate-100 {
+    background-color: var(--theme-card) !important;
+}
+
+html.dark .bg-gray-200,
+html.dark .bg-slate-200 {
+    background-color: #334155 !important;
+}
+
+/* Common text colors */
+html.dark .text-gray-900,
+html.dark .text-gray-800,
+html.dark .text-slate-900,
+html.dark .text-slate-800,
+html.dark .text-black {
+    color: #f1f5f9 !important;
+}
+
+html.dark .text-gray-700,
+html.dark .text-gray-600,
+html.dark .text-slate-700,
+html.dark .text-slate-600,
+html.dark .text-slate-500 {
+    color: #cbd5e1 !important;
+}
+
+html.dark .text-gray-500,
+html.dark .text-gray-400,
+html.dark .text-slate-400 {
+    color: #94a3b8 !important;
+}
+
+/* Borders */
+html.dark .border,
+html.dark .border-gray-100,
+html.dark .border-gray-200,
+html.dark .border-slate-100,
+html.dark .border-slate-200 {
+    border-color: var(--theme-border) !important;
+}
+
+/* Forms */
+html.dark input,
+html.dark select,
+html.dark textarea {
+    background-color: var(--theme-input);
+    color: var(--theme-text);
+    border-color: var(--theme-border);
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+    color: #94a3b8;
+}
+
+/* Tables */
+html.dark table {
+    color: var(--theme-text);
+}
+
+html.dark th {
+    background-color: #273449;
+    color: #f1f5f9;
+}
+
+html.dark td {
+    border-color: var(--theme-border);
+}
+
+/* Links */
+html.dark a {
+    color: #93c5fd;
+}
+
+/* Improve readability */
+p, label, th, td {
+    line-height: 1.6;
+}
+
+
+/* ===== SMARTLEAVE READABILITY IMPROVEMENTS ===== */
+
+html {
+    font-size: 17px !important;
+}
+
+body {
+    font-size: 17px !important;
+    line-height: 1.7 !important;
+}
+
+/* Increase small and normal text */
+.text-xs {
+    font-size: 15px !important;
+}
+
+.text-sm {
+    font-size: 16px !important;
+}
+
+.text-base {
+    font-size: 17px !important;
+}
+
+.text-lg {
+    font-size: 19px !important;
+}
+
+.text-xl {
+    font-size: 21px !important;
+}
+
+.text-2xl {
+    font-size: 25px !important;
+}
+
+.text-3xl {
+    font-size: 30px !important;
+}
+
+/* Readable labels and table content */
+label, th, td, p, li {
+    font-size: inherit;
+    line-height: 1.65;
+}
+
+button, input, select, textarea {
+    font-size: 16px !important;
+    min-height: 42px;
+}
+
+/* Dark mode: improve navigation and header contrast */
+html.dark header,
+html.dark nav {
+    color: #f8fafc !important;
+}
+
+html.dark header *,
+html.dark nav * {
+    color: #f1f5f9;
+}
+
+html.dark header a,
+html.dark nav a {
+    color: #e2e8f0 !important;
+}
+
+html.dark header button,
+html.dark nav button {
+    color: #f8fafc !important;
+}
+
+/* Keep colored status badges readable */
+html.dark .text-green-600,
+html.dark .text-green-700 {
+    color: #86efac !important;
+}
+
+html.dark .text-red-600,
+html.dark .text-red-700 {
+    color: #fca5a5 !important;
+}
+
+html.dark .text-blue-600,
+html.dark .text-blue-700 {
+    color: #93c5fd !important;
+}
+
