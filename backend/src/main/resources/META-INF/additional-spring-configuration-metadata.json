@@ -1,0 +1,44 @@
+{
+  "properties": [
+    {
+      "name": "app.jwt.secret",
+      "type": "java.lang.String",
+      "description": "Secret key used for JWT authentication."
+    },
+    {
+      "name": "app.jwt.expiration",
+      "type": "java.lang.Long",
+      "description": "JWT token expiration time in milliseconds."
+    },
+    {
+      "name": "app.mail.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enables or disables email notifications."
+    },
+    {
+      "name": "app.mail.from",
+      "type": "java.lang.String",
+      "description": "Sender email address for notifications."
+    },
+    {
+      "name": "app.bootstrap.hr.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enables creation of the initial HR account."
+    },
+    {
+      "name": "app.bootstrap.hr.name",
+      "type": "java.lang.String",
+      "description": "Full name of the initial HR account."
+    },
+    {
+      "name": "app.bootstrap.hr.email",
+      "type": "java.lang.String",
+      "description": "Email address of the initial HR account."
+    },
+    {
+      "name": "app.bootstrap.hr.password",
+      "type": "java.lang.String",
+      "description": "Initial HR account password."
+    }
+  ]
+}

@@ -1,0 +1,1116 @@
+﻿import { getUnreadCount } from "../../services/notificationService";
+
+import { useEffect, useState } from 'react'
+import { useAuth } from '../../context/AuthContext'
+import { getEmployeeDashboard } from '../../services/dashboardService'
+import type { EmployeeDashboardData } from '../../services/dashboardTypes'
+import {
+  getLeaveTypes,
+  getMyLeaveApplications,
+  submitLeaveApplication,
+} from '../../services/leaveService'
+import type { LeaveType } from '../../services/leaveService'
+import {
+  LayoutDashboard, CalendarDays, ClipboardList, Users, BarChart3,
+  Settings, Bell, Search, Plus, Clock, CheckCircle2, Menu, LogOut,
+  ChevronDown, Calendar, FileText, Briefcase, UserRound, ArrowUpRight,
+  Filter, X,
+} from 'lucide-react'
+
+type Page =
+  | 'Dashboard'
+  | 'Apply Leave'
+  | 'My Leave Requests'
+  | 'Team Calendar'
+  | 'Employees'
+  | 'Reports'
+  | 'Settings'
+
+type LeaveStatus = 'Pending' | 'Approved' | 'Rejected' | 'Cancelled'
+
+type LeaveRequest = {
+  id: number
+  type: string
+  from: string
+  to: string
+  days: number
+  applied: string
+  status: LeaveStatus
+  reason: string
+}
+
+const navigation = [
+  { name: 'Dashboard' as Page, icon: LayoutDashboard, group: 'WORKSPACE' },
+  { name: 'Apply Leave' as Page, icon: Plus, group: 'WORKSPACE' },
+  { name: 'My Leave Requests' as Page, icon: ClipboardList, group: 'WORKSPACE' },
+  { name: 'Team Calendar' as Page, icon: CalendarDays, group: 'WORKSPACE' },
+  { name: 'Employees' as Page, icon: Users, group: 'MANAGEMENT' },
+  { name: 'Reports' as Page, icon: BarChart3, group: 'MANAGEMENT' },
+  { name: 'Settings' as Page, icon: Settings, group: 'SYSTEM' },
+]
+
+function StatusBadge({ status }: { status: LeaveStatus }) {
+  const styles = {
+    Approved: 'bg-emerald-50 text-emerald-700',
+    Pending: 'bg-amber-50 text-amber-700',
+    Rejected: 'bg-rose-50 text-rose-700',
+    Cancelled: 'bg-slate-100 text-slate-600',
+  }
+
+  const dots = {
+    Approved: 'bg-emerald-500',
+    Pending: 'bg-amber-500',
+    Rejected: 'bg-rose-500',
+    Cancelled: 'bg-slate-400',
+  }
+
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${styles[status]}`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${dots[status]}`} />
+      {status}
+    </span>
+  )
+}
+
+function App() {
+  const { user, logout } = useAuth()
+
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  useEffect(() => {
+    getUnreadCount().then(setUnreadCount).catch(() => {})
+  }, [])
+
+  const [page, setPage] = useState<Page>('Dashboard')
+  const [requests, setRequests] = useState<LeaveRequest[]>([])
+  const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([])
+  const [submitting, setSubmitting] = useState(false)
+  const [dashboard, setDashboard] = useState<EmployeeDashboardData | null>(null)
+
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [notificationOpen, setNotificationOpen] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
+  const [search, setSearch] = useState('')
+
+  const [leaveType, setLeaveType] = useState<number>(0)
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
+  const [reason, setReason] = useState('')
+  const [formMessage, setFormMessage] = useState('')
+
+  useEffect(() => {
+    async function loadDashboard() {
+      try {
+        setLoading(true)
+        setError('')
+
+        const data = await getEmployeeDashboard()
+        setDashboard(data)
+
+        const types = await getLeaveTypes()
+        setLeaveTypes(types)
+
+        if (types.length > 0) {
+          setLeaveType(types[0].id)
+        }
+
+        const applications = await getMyLeaveApplications()
+
+        const mappedRequests: LeaveRequest[] = applications.map(request => ({
+          id: request.id,
+          type: request.leaveTypeName,
+          from: request.startDate,
+          to: request.endDate,
+          days: request.totalDays,
+          applied: request.appliedAt.slice(0, 10),
+          status:
+            request.status === 'PENDING' ? 'Pending' :
+            request.status === 'APPROVED' ? 'Approved' :
+            request.status === 'REJECTED' ? 'Rejected' :
+            'Cancelled',
+          reason: request.reason || '',
+        }))
+
+        setRequests(mappedRequests)
+      } catch (err) {
+        console.error('Dashboard loading failed:', err)
+        setError('Unable to load dashboard information. Check that the backend is running and sign in again.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadDashboard()
+  }, [])
+
+  const pendingCount = dashboard?.pendingRequests ?? 0
+  const approvedCount = dashboard?.approvedRequests ?? 0
+  const rejectedCount = dashboard?.rejectedRequests ?? 0
+  const cancelledCount = dashboard?.cancelledRequests ?? 0
+
+  const totalRequests =
+    pendingCount + approvedCount + rejectedCount + cancelledCount
+
+  const employeeName = dashboard?.employeeName || user?.fullName || 'Employee'
+  const initials = employeeName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(part => part[0].toUpperCase())
+    .join('')
+
+  const leaveBalances = (dashboard?.leaveBalances ?? []).map(balance => ({
+    name: balance.leaveType,
+    available: balance.availableDays,
+    total: balance.allocatedDays,
+    used: balance.usedDays,
+    pending: balance.pendingDays,
+    color:
+      balance.leaveType.toLowerCase().includes('sick') ? 'bg-emerald-500' :
+      balance.leaveType.toLowerCase().includes('earned') ? 'bg-violet-500' :
+      'bg-blue-600',
+    icon:
+      balance.leaveType.toLowerCase().includes('sick') ? Briefcase :
+      balance.leaveType.toLowerCase().includes('earned') ? Clock :
+      CalendarDays,
+  }))
+
+  async function submitLeave(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setFormMessage('')
+
+    if (!leaveType || !startDate || !endDate || !reason.trim()) {
+      setFormMessage('Please complete all fields.')
+      return
+    }
+
+    if (endDate < startDate) {
+      setFormMessage('End date cannot be before start date.')
+      return
+    }
+
+    try {
+      setSubmitting(true)
+
+      await submitLeaveApplication({
+        leaveTypeId: leaveType,
+        startDate,
+        endDate,
+        reason: reason.trim(),
+      })
+
+      const applications = await getMyLeaveApplications()
+
+      const mappedRequests: LeaveRequest[] = applications.map(request => ({
+        id: request.id,
+        type: request.leaveTypeName,
+        from: request.startDate,
+        to: request.endDate,
+        days: request.totalDays,
+        applied: request.appliedAt.slice(0, 10),
+        status:
+          request.status === 'PENDING' ? 'Pending' :
+          request.status === 'APPROVED' ? 'Approved' :
+          request.status === 'REJECTED' ? 'Rejected' :
+          'Cancelled',
+        reason: request.reason || '',
+      }))
+
+      setRequests(mappedRequests)
+
+      const updatedDashboard = await getEmployeeDashboard()
+      setDashboard(updatedDashboard)
+
+      setStartDate('')
+      setEndDate('')
+      setReason('')
+      setFormMessage('Leave application submitted successfully.')
+    } catch (err: any) {
+      console.error('Leave submission failed:', err)
+      setFormMessage(
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        'Unable to submit leave application. Please check your leave balance and try again.'
+      )
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const filteredRequests = requests.filter(request =>
+    `${request.type} ${request.status} ${request.reason}`
+      .toLowerCase()
+      .includes(search.toLowerCase())
+  )
+
+  function changePage(nextPage: Page) {
+    setPage(nextPage)
+    setSidebarOpen(false)
+    setSearch('')
+  }
+
+  function formatDate(date: string) {
+    return new Date(`${date}T00:00:00`).toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    })
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+          <p className="mt-4 text-sm font-medium text-slate-600">
+            Loading your leave dashboard...
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !dashboard) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
+        <div className="max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center">
+          <h2 className="text-xl font-bold text-slate-900">
+            Dashboard unavailable
+          </h2>
+          <p className="mt-3 text-sm text-rose-600">
+            {error || 'No dashboard information was returned.'}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-5 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white"
+          >
+            Try again
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-800">
+      {sidebarOpen && (
+        <button
+          aria-label="Close navigation"
+          className="fixed inset-0 z-30 bg-slate-950/40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      <aside className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-slate-950 text-white transition-transform duration-300 lg:translate-x-0 ${
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
+        <div className="flex h-20 items-center justify-between border-b border-white/10 px-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600">
+              <CalendarDays size={22} />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold tracking-tight">SmartLeave</h1>
+              <p className="text-xs text-slate-400">Management System</p>
+            </div>
+          </div>
+          <button
+            className="rounded-lg p-2 text-slate-400 hover:bg-white/10 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="px-4 py-6">
+          {['WORKSPACE', 'MANAGEMENT', 'SYSTEM'].map(group => (
+            <div key={group} className="mb-6">
+              <p className="mb-3 px-3 text-[10px] font-bold tracking-[0.18em] text-slate-500">
+                {group}
+              </p>
+              <nav className="space-y-1">
+                {navigation.filter(item => item.group === group).map(item => {
+                  const Icon = item.icon
+                  const active = page === item.name
+
+                  return (
+                    <button
+                      key={item.name}
+                      onClick={() => changePage(item.name)}
+                      className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition ${
+                        active
+                          ? 'bg-blue-600 text-white shadow-lg shadow-blue-950/30'
+                          : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                      }`}
+                    >
+                      <Icon size={19} />
+                      {item.name}
+                      {item.name === 'My Leave Requests' && pendingCount > 0 && (
+                        <span className="ml-auto rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-bold text-slate-950">
+                          {pendingCount}
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+              </nav>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-auto border-t border-white/10 p-4">
+          <div className="rounded-xl bg-white/5 p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-500 text-sm font-bold">
+                {initials}
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold">{employeeName}</p>
+                <p className="text-xs text-slate-400">Employee</p>
+              </div>
+            </div>
+            <button
+              onClick={logout}
+              className="mt-4 flex w-full items-center gap-2 text-xs text-slate-400 hover:text-white"
+            >
+              <LogOut size={15} />
+              Sign out
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <div className="min-h-screen lg:pl-64">
+        <header className="sticky top-0 z-20 flex h-20 items-center justify-between border-b border-slate-200 bg-white/95 px-4 backdrop-blur sm:px-8">
+          <div className="flex items-center gap-3">
+            <button
+              className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 lg:hidden"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <Menu size={22} />
+            </button>
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">{page}</h2>
+              <p className="hidden text-xs text-slate-500 sm:block">
+                Home / {page}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 sm:gap-4">
+            <div className="relative hidden md:block">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={17} />
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search..."
+                className="w-52 rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-blue-400 focus:bg-white"
+              />
+            </div>
+
+            <div className="relative">
+              <button
+                onClick={() => window.location.href = "/notifications"}
+                className="relative rounded-xl p-2.5 text-slate-500 hover:bg-slate-100"
+                aria-label="Notifications"
+              >
+                <Bell size={20} />{unreadCount > 0 && <span className="absolute -right-1 -top-1 rounded-full bg-red-600 px-1.5 text-xs text-white">{unreadCount}</span>}
+                {pendingCount > 0 && (
+                  <span className="absolute right-2 top-2 h-2 w-2 rounded-full border-2 border-white bg-rose-500" />
+                )}
+              </button>
+              {notificationOpen && (
+                <div className="absolute right-0 top-12 z-50 w-72 rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
+                  <p className="font-semibold text-slate-900">Notifications</p>
+                  <p className="mt-3 text-sm text-slate-600">
+                    You have {pendingCount} pending leave request(s).
+                  </p>
+                  <button
+                    onClick={() => {
+                      changePage('My Leave Requests')
+                      setNotificationOpen(false)
+                    }}
+                    className="mt-3 text-sm font-semibold text-blue-600"
+                  >
+                    View requests
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="relative">
+              <button
+                onClick={() => setProfileOpen(!profileOpen)}
+                className="flex items-center gap-2 rounded-xl p-1.5 hover:bg-slate-100"
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-700">
+                  {initials}
+                </div>
+                <span className="hidden text-sm font-semibold sm:block">
+                  {employeeName.split(' ')[0]}
+                </span>
+                <ChevronDown size={15} className="hidden text-slate-400 sm:block" />
+              </button>
+              {profileOpen && (
+                <div className="absolute right-0 top-12 z-50 w-44 rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
+                  <button
+                    onClick={() => {
+                      changePage('Settings')
+                      setProfileOpen(false)
+                    }}
+                    className="w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-slate-100"
+                  >
+                    My Profile
+                  </button>
+                  <button
+                    onClick={() => {
+                      setProfileOpen(false)
+                      logout()
+                    }}
+                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-rose-600 hover:bg-rose-50"
+                  >
+                    Sign out
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </header>
+
+        <main className="mx-auto max-w-[1500px] p-4 sm:p-8">
+          {page === 'Dashboard' && (
+            <Dashboard
+              requests={requests}
+              leaveBalances={leaveBalances}
+              approvedCount={approvedCount}
+              pendingCount={pendingCount}
+              totalRequests={totalRequests}
+              availableDays={dashboard.availableDays}
+              employeeName={employeeName}
+              year={dashboard.year}
+              onNavigate={changePage}
+              formatDate={formatDate}
+            />
+          )}
+
+          {page === 'Apply Leave' && (
+            <section className="mx-auto max-w-3xl">
+              <div className="mb-6">
+                <p className="text-sm text-slate-500">Leave Management</p>
+                <h2 className="mt-1 text-2xl font-bold text-slate-900">Apply for Leave</h2>
+                <p className="mt-2 text-sm text-slate-500">
+                  Fill in the details below to submit a leave request.
+                </p>
+              </div>
+
+              <form onSubmit={submitLeave} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+                <div className="mb-6 flex items-center gap-3 border-b border-slate-100 pb-5">
+                  <div className="rounded-xl bg-blue-50 p-3 text-blue-600">
+                    <CalendarDays size={23} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900">Leave Application Form</h3>
+                    <p className="text-xs text-slate-500">Enter your leave information</p>
+                  </div>
+                </div>
+
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <div className="sm:col-span-2">
+                    <label className="mb-2 block text-sm font-semibold">Leave Type</label>
+                    <select
+                      value={leaveType}
+                      onChange={e => setLeaveType(Number(e.target.value))}
+                      className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-blue-500"
+                      required
+                    >
+                      <option value={0}>Select Leave Type</option>
+                      {leaveTypes.map(type => (
+                        <option key={type.id} value={type.id}>
+                          {type.name}
+                        </option>
+                      ))}
+                    </select>
+                    {leaveTypes.length === 0 && (
+                      <p className="mt-2 text-xs text-rose-600">
+                        No active leave types found.
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold">Start Date</label>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={e => setStartDate(e.target.value)}
+                      min={new Date().toISOString().slice(0, 10)}
+                      className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold">End Date</label>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={e => setEndDate(e.target.value)}
+                      min={startDate || new Date().toISOString().slice(0, 10)}
+                      className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-500"
+                      required
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="mb-2 block text-sm font-semibold">Reason for Leave</label>
+                    <textarea
+                      value={reason}
+                      onChange={e => setReason(e.target.value)}
+                      rows={4}
+                      placeholder="Explain briefly why you need leave..."
+                      className="w-full resize-none rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-500"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {formMessage && (
+                  <div className={`mt-5 rounded-xl p-3 text-sm ${
+                    formMessage.includes('successfully')
+                      ? 'bg-emerald-50 text-emerald-700'
+                      : 'bg-rose-50 text-rose-700'
+                  }`}>
+                    {formMessage}
+                  </div>
+                )}
+
+                <div className="mt-7 flex flex-wrap justify-end gap-3 border-t border-slate-100 pt-5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStartDate('')
+                      setEndDate('')
+                      setReason('')
+                      setFormMessage('')
+                    }}
+                    className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                  >
+                    Clear Form
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting || leaveTypes.length === 0}
+                    className="flex items-center gap-2 rounded-xl bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700"
+                  >
+                    <Plus size={17} />
+                    {submitting ? "Submitting..." : "Submit Request"}
+                  </button>
+                </div>
+              </form>
+            </section>
+          )}
+
+          {page === 'My Leave Requests' && (
+            <section>
+              <PageHeading
+                title="My Leave Requests"
+                subtitle="Track and manage your submitted leave applications."
+                action={
+                  <button onClick={() => changePage('Apply Leave')} className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
+                    <Plus size={17} /> Apply Leave
+                  </button>
+                }
+              />
+              <div className="mb-5 grid gap-4 sm:grid-cols-3">
+                <SmallStat title="Total Requests" value={totalRequests} icon={FileText} color="blue" />
+                <SmallStat title="Approved" value={approvedCount} icon={CheckCircle2} color="green" />
+                <SmallStat title="Pending" value={pendingCount} icon={Clock} color="amber" />
+              </div>
+              <RequestTable requests={filteredRequests} formatDate={formatDate} />
+            </section>
+          )}
+
+          {page === 'Team Calendar' && (
+            <section>
+              <PageHeading title="Team Calendar" subtitle="View your team's upcoming leave schedule." />
+              <div className="rounded-2xl border border-slate-200 bg-white p-6">
+                <div className="mb-5 flex items-center gap-3">
+                  <CalendarDays className="text-blue-600" size={23} />
+                  <h3 className="font-bold">Upcoming Leave Schedule</h3>
+                </div>
+                {requests.filter(r => r.status === 'Approved').map(request => (
+                  <div key={request.id} className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-slate-50 p-4">
+                    <div>
+                      <p className="font-semibold text-slate-800">{request.type}</p>
+                  {formatDate(request.from)} - {formatDate(request.to)}
+                    </div>
+                    <StatusBadge status={request.status} />
+                  </div>
+                ))}
+                {approvedCount === 0 && (
+                  <p className="text-sm text-slate-500">No approved leave scheduled.</p>
+                )}
+              </div>
+            </section>
+          )}
+
+          {page === 'Employees' && (
+            <section>
+              <PageHeading title="Employee Management" subtitle="Employee directory and workforce overview." />
+              <div className="rounded-2xl border border-slate-200 bg-white p-6">
+                <div className="flex items-center gap-3">
+                  <UserRound className="text-blue-600" size={24} />
+                  <div>
+                    <p className="font-semibold">{employeeName}</p>
+                    <p className="text-sm text-slate-500">
+                      Employee · {dashboard.departmentName || 'Department not assigned'}
+                    </p>
+                  </div>
+                </div>
+                <p className="mt-5 text-xs text-slate-500">
+                  The complete employee directory will be loaded from the backend after API integration.
+                </p>
+              </div>
+            </section>
+          )}
+
+          {page === 'Reports' && (
+            <section>
+              <PageHeading title="Leave Reports" subtitle="Overview of leave requests and their current status." />
+              <div className="grid gap-4 sm:grid-cols-3">
+                <SmallStat title="Total Requests" value={totalRequests} icon={FileText} color="blue" />
+                <SmallStat title="Approved Requests" value={approvedCount} icon={CheckCircle2} color="green" />
+                <SmallStat title="Pending Requests" value={pendingCount} icon={Clock} color="amber" />
+              </div>
+              <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6">
+                <h3 className="mb-5 font-bold">Request Status Summary</h3>
+                {(['Approved', 'Pending', 'Rejected', 'Cancelled'] as LeaveStatus[]).map(status => {
+                  const count =
+                    status === 'Approved' ? approvedCount :
+                    status === 'Pending' ? pendingCount :
+                    status === 'Rejected' ? rejectedCount :
+                    cancelledCount
+
+                  const percent = totalRequests ? (count / totalRequests) * 100 : 0
+
+                  return (
+                    <div key={status} className="mb-5">
+                      <div className="mb-2 flex justify-between text-sm">
+                        <span className="font-medium">{status}</span>
+                        <span className="text-slate-500">{count} requests</span>
+                      </div>
+                      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          className={`h-full rounded-full ${
+                            status === 'Approved' ? 'bg-emerald-500' :
+                            status === 'Pending' ? 'bg-amber-400' :
+                            status === 'Rejected' ? 'bg-rose-500' : 'bg-slate-400'
+                          }`}
+                          style={{ width: `${percent}%` }}
+                        />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </section>
+          )}
+
+          {page === 'Settings' && (
+            <section>
+              <PageHeading title="Profile & Settings" subtitle="Your account information and preferences." />
+              <div className="max-w-2xl rounded-2xl border border-slate-200 bg-white p-6">
+                <div className="mb-6 flex items-center gap-4">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 text-xl font-bold text-blue-700">
+                    {initials}
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold">{employeeName}</h3>
+                    <p className="text-sm text-slate-500">Employee Account</p>
+                  </div>
+                </div>
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <ProfileField label="Full Name" value={employeeName} />
+                  <ProfileField label="Email" value={user?.email || 'Not available'} />
+                  <ProfileField label="Role" value={user?.role || 'EMPLOYEE'} />
+                  <ProfileField label="Department" value={dashboard.departmentName || 'Not assigned'} />
+                  <ProfileField label="Employee ID" value={dashboard.employeeCode || 'Not available'} />
+                  <ProfileField label="Designation" value={dashboard.designation || 'Not available'} />
+                </div>
+                <p className="mt-6 rounded-xl bg-blue-50 p-4 text-sm text-blue-700">
+                  Profile editing and account settings will be connected to the backend.
+                </p>
+              </div>
+            </section>
+          )}
+
+          <footer className="mt-12 border-t border-slate-200 py-6 text-center text-xs text-slate-400">
+            SmartLeave Management System - Employee Portal
+          </footer>
+        </main>
+      </div>
+    </div>
+  )
+}
+
+function PageHeading({
+  title,
+  subtitle,
+  action,
+}: {
+  title: string
+  subtitle: string
+  action?: React.ReactNode
+}) {
+  return (
+    <div className="mb-7 flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <h2 className="text-2xl font-bold text-slate-900">{title}</h2>
+        <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
+      </div>
+      {action}
+    </div>
+  )
+}
+
+function SmallStat({
+  title,
+  value,
+  icon: Icon,
+  color,
+}: {
+  title: string
+  value: number
+  icon: React.ElementType
+  color: 'blue' | 'green' | 'amber'
+}) {
+  const colors = {
+    blue: 'bg-blue-50 text-blue-600',
+    green: 'bg-emerald-50 text-emerald-600',
+    amber: 'bg-amber-50 text-amber-600',
+  }
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-5">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-slate-500">{title}</p>
+        <div className={`rounded-xl p-2.5 ${colors[color]}`}>
+          <Icon size={19} />
+        </div>
+      </div>
+      <p className="mt-4 text-3xl font-bold text-slate-900">{value}</p>
+    </div>
+  )
+}
+
+function RequestTable({
+  requests,
+  formatDate,
+}: {
+  requests: LeaveRequest[]
+  formatDate: (date: string) => string
+}) {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-5">
+        <div>
+          <h3 className="font-bold text-slate-900">Leave Applications</h3>
+          <p className="mt-1 text-xs text-slate-500">Your recent leave request activity</p>
+        </div>
+        <span className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-500">
+          <Filter size={15} /> Recent applications
+        </span>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[700px] text-left text-sm">
+          <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <tr>
+              <th className="px-5 py-4 font-semibold">Leave Type</th>
+              <th className="px-5 py-4 font-semibold">Date Range</th>
+              <th className="px-5 py-4 font-semibold">Days</th>
+              <th className="px-5 py-4 font-semibold">Applied On</th>
+              <th className="px-5 py-4 font-semibold">Status</th>
+              <th className="px-5 py-4 font-semibold">Reason</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {requests.map(request => (
+              <tr key={request.id} className="transition hover:bg-slate-50">
+                <td className="px-5 py-4 font-semibold text-slate-800">{request.type}</td>
+                <td className="px-5 py-4 text-slate-600">
+                  {formatDate(request.from)} - {formatDate(request.to)}
+                </td>
+                <td className="px-5 py-4 text-slate-600">{request.days}</td>
+                <td className="px-5 py-4 text-slate-600">{formatDate(request.applied)}</td>
+                <td className="px-5 py-4"><StatusBadge status={request.status} /></td>
+                <td className="max-w-40 truncate px-5 py-4 text-slate-500">
+                  {request.reason || 'Not provided'}
+                </td>
+              </tr>
+            ))}
+            {requests.length === 0 && (
+              <tr>
+                <td colSpan={6} className="px-5 py-12 text-center text-slate-500">
+                  No recent leave requests found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+function ProfileField({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-400">{label}</p>
+      <p className="rounded-lg bg-slate-50 px-3 py-3 text-sm font-medium text-slate-800">{value}</p>
+    </div>
+  )
+}
+
+function Dashboard({
+  requests,
+  leaveBalances,
+  approvedCount,
+  pendingCount,
+  totalRequests,
+  availableDays,
+  employeeName,
+  year,
+  onNavigate,
+  formatDate,
+}: {
+  requests: LeaveRequest[]
+  leaveBalances: {
+    name: string
+    available: number
+    total: number
+    used: number
+    pending: number
+    color: string
+    icon: React.ElementType
+  }[]
+  approvedCount: number
+  pendingCount: number
+  totalRequests: number
+  availableDays: number
+  employeeName: string
+  year: number
+  onNavigate: (page: Page) => void
+  formatDate: (date: string) => string
+}) {
+  return (
+    <>
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <p className="text-sm font-medium text-blue-600">{year} Leave Overview</p>
+          <h2 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">
+            Welcome back, {employeeName}!
+          </h2>
+          <p className="mt-2 text-sm text-slate-500">
+            Here's an overview of your leave activity.
+          </p>
+        </div>
+        <button
+          onClick={() => onNavigate('Apply Leave')}
+          className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700"
+        >
+          <Plus size={18} /> Apply for Leave
+        </button>
+      </div>
+
+      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard title="Available Leave" value={`${availableDays} Days`} subtitle="Across all leave types" icon={CalendarDays} color="blue" />
+        <StatCard title="Approved Requests" value={approvedCount.toString()} subtitle="Successfully approved" icon={CheckCircle2} color="green" />
+        <StatCard title="Pending Requests" value={pendingCount.toString()} subtitle="Awaiting manager action" icon={Clock} color="amber" />
+        <StatCard title="Total Applications" value={totalRequests.toString()} subtitle="All submitted requests" icon={FileText} color="purple" />
+      </div>
+
+      <div className="mt-8 grid gap-6 xl:grid-cols-3">
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 xl:col-span-2">
+          <div className="mb-6 flex items-center justify-between">
+            <div>
+              <h3 className="font-bold text-slate-900">My Leave Balance</h3>
+              <p className="mt-1 text-xs text-slate-500">Available leave days by category</p>
+            </div>
+            <button onClick={() => onNavigate('My Leave Requests')} className="text-xs font-semibold text-blue-600 hover:text-blue-700">
+              View details
+            </button>
+          </div>
+
+          <div className="space-y-6">
+            {leaveBalances.map(balance => {
+              const Icon = balance.icon
+              const used = balance.used
+              const percentage = balance.total > 0
+                ? Math.min((used / balance.total) * 100, 100)
+                : 0
+
+              return (
+                <div key={balance.name}>
+                  <div className="mb-2 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-lg bg-slate-50 p-2 text-slate-600">
+                        <Icon size={18} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-800">{balance.name}</p>
+                        <p className="text-xs text-slate-400">
+                          {used} used of {balance.total} days
+                          {balance.pending > 0 ? ` | ${balance.pending} pending` : ""}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-sm font-bold text-slate-900">
+                      {balance.available} <span className="font-normal text-slate-400">left</span>
+                    </p>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                    <div className={`h-full rounded-full ${balance.color}`} style={{ width: `${percentage}%` }} />
+                  </div>
+                </div>
+              )
+            })}
+            {leaveBalances.length === 0 && (
+              <p className="text-sm text-slate-500">No leave balances are configured for this year.</p>
+            )}
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-slate-200 bg-white p-6">
+          <div className="mb-5">
+            <h3 className="font-bold text-slate-900">Quick Actions</h3>
+            <p className="mt-1 text-xs text-slate-500">Common tasks</p>
+          </div>
+          <div className="space-y-3">
+            <QuickAction icon={Plus} title="Apply for Leave" description="Submit a new application" onClick={() => onNavigate('Apply Leave')} />
+            <QuickAction icon={ClipboardList} title="Leave History" description="View your requests" onClick={() => onNavigate('My Leave Requests')} />
+            <QuickAction icon={Calendar} title="Team Calendar" description="See upcoming leave dates" onClick={() => onNavigate('Team Calendar')} />
+            <QuickAction icon={UserRound} title="My Profile" description="View account information" onClick={() => onNavigate('Settings')} />
+          </div>
+        </section>
+      </div>
+
+      <section className="mt-8 rounded-2xl border border-slate-200 bg-white">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-6">
+          <div>
+            <h3 className="font-bold text-slate-900">Recent Leave Requests</h3>
+            <p className="mt-1 text-xs text-slate-500">Your latest application activity</p>
+          </div>
+          <button onClick={() => onNavigate('My Leave Requests')} className="flex items-center gap-1 text-sm font-semibold text-blue-600 hover:text-blue-700">
+            View all <ArrowUpRight size={16} />
+          </button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[650px] text-left text-sm">
+            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+              <tr>
+                <th className="px-6 py-4 font-semibold">Leave Type</th>
+                <th className="px-6 py-4 font-semibold">Date Range</th>
+                <th className="px-6 py-4 font-semibold">Days</th>
+                <th className="px-6 py-4 font-semibold">Status</th>
+                <th className="px-6 py-4 font-semibold">Applied On</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {requests.slice(0, 4).map(request => (
+                <tr key={request.id} className="hover:bg-slate-50">
+                  <td className="px-6 py-4 font-semibold">{request.type}</td>
+                  <td className="px-6 py-4 text-slate-600">
+                    {formatDate(request.from)} - {formatDate(request.to)}
+                  </td>
+                  <td className="px-6 py-4 text-slate-600">{request.days}</td>
+                  <td className="px-6 py-4"><StatusBadge status={request.status} /></td>
+                  <td className="px-6 py-4 text-slate-600">{formatDate(request.applied)}</td>
+                </tr>
+              ))}
+              {requests.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-6 py-8 text-center text-slate-500">
+                    No recent applications.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </>
+  )
+}
+
+function StatCard({
+  title,
+  value,
+  subtitle,
+  icon: Icon,
+  color,
+}: {
+  title: string
+  value: string
+  subtitle: string
+  icon: React.ElementType
+  color: 'blue' | 'green' | 'amber' | 'purple'
+}) {
+  const colors = {
+    blue: 'bg-blue-50 text-blue-600',
+    green: 'bg-emerald-50 text-emerald-600',
+    amber: 'bg-amber-50 text-amber-600',
+    purple: 'bg-violet-50 text-violet-600',
+  }
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+      <div className="flex items-center justify-between">
+        <div className={`rounded-xl p-3 ${colors[color]}`}>
+          <Icon size={21} />
+        </div>
+        <span className="text-xs font-medium text-slate-400">Overview</span>
+      </div>
+      <p className="mt-5 text-2xl font-bold text-slate-900">{value}</p>
+      <p className="mt-1 text-sm font-semibold text-slate-700">{title}</p>
+      <p className="mt-1 text-xs text-slate-400">{subtitle}</p>
+    </div>
+  )
+}
+
+function QuickAction({
+  icon: Icon,
+  title,
+  description,
+  onClick,
+}: {
+  icon: React.ElementType
+  title: string
+  description: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="group flex w-full items-center gap-3 rounded-xl border border-slate-100 p-3 text-left transition hover:border-blue-200 hover:bg-blue-50/50"
+    >
+      <div className="rounded-lg bg-blue-50 p-2.5 text-blue-600 transition group-hover:bg-blue-100">
+        <Icon size={19} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-slate-800">{title}</p>
+        <p className="mt-0.5 text-xs text-slate-400">{description}</p>
+      </div>
+      <ArrowUpRight size={16} className="text-slate-300 transition group-hover:text-blue-600" />
+    </button>
+  )
+}
+
+export default App
+
+
+
+

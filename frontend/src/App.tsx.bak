@@ -1,0 +1,82 @@
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Login from "./pages/auth/Login";
+import Register from "./pages/auth/Register";
+import Unauthorized from "./pages/Unauthorized";
+import EmployeeDashboard from "./pages/employee/EmployeeDashboard";
+import HRDashboard from "./pages/hr/HRDashboard";
+import HRManagement from "./pages/hr/HRManagement";
+import HRPolicies from "./pages/hr/HRPolicies";
+import HRLeaveBalances from "./pages/hr/HRLeaveBalances";
+import HRAnalytics from "./pages/hr/HRAnalytics";
+import Notifications from "./pages/Notifications";
+import ManagerDashboard from "./pages/manager/ManagerDashboard";
+
+function AppRoutes() {
+    const { isAuthenticated, user } = useAuth();
+
+    function homeRoute() {
+        if (!isAuthenticated || !user) return "/login";
+
+        if (user.role === "HR") return "/hr/dashboard";
+        if (user.role === "MANAGER") return "/manager/dashboard";
+
+        return "/employee/dashboard";
+    }
+
+    return (
+        <Routes>
+            <Route path="/" element={<Navigate to={homeRoute()} replace />} />
+            <Route
+                path="/login"
+                element={isAuthenticated ? <Navigate to={homeRoute()} replace /> : <Login />}
+            />
+            <Route
+                path="/register"
+                element={isAuthenticated ? <Navigate to={homeRoute()} replace /> : <Register />}
+            />
+            <Route path="/unauthorized" element={<Unauthorized />} />
+<Route element={<ProtectedRoute />}>
+  <Route path="/notifications" element={<Notifications />} />
+</Route>
+
+            <Route element={<ProtectedRoute allowedRoles={["EMPLOYEE"]} />}>
+                <Route path="/employee/dashboard" element={<EmployeeDashboard />} />
+            </Route>
+
+            <Route element={<ProtectedRoute allowedRoles={["MANAGER", "HR"]} />}>
+                <Route path="/manager/dashboard" element={<ManagerDashboard />} />
+            </Route>
+
+            <Route element={<ProtectedRoute allowedRoles={["HR"]} />}>
+                <Route path="/hr/dashboard" element={<HRDashboard />} />
+<Route path="/hr/management" element={<HRManagement />} />
+<Route path="/hr/policies" element={<HRPolicies />} />
+  <Route path="/hr/leave-balances" element={<HRLeaveBalances />} />
+  <Route path="/hr/analytics" element={<HRAnalytics />} />
+            </Route>
+
+            <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+    );
+}
+
+export default function App() {
+    return (
+        <BrowserRouter>
+            <AuthProvider>
+                <AppRoutes />
+            </AuthProvider>
+        </BrowserRouter>
+    );
+}
+
+
+
+
+
+
+
+
+
